@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 
@@ -7,7 +7,8 @@ function Editor() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('All changes saved');
+  const debounceTimer = useRef(null);
 
   useEffect(() => {
     api.get(`/documents/${id}`).then((res) => {
@@ -16,27 +17,50 @@ function Editor() {
     });
   }, [id]);
 
-  const save = async () => {
-    setSaving(true);
-    await api.put(`/documents/${id}`, { title, content });
-    setSaving(false);
+  const save = async (newTitle, newContent) => {
+    setSaveStatus('Saving...');
+    await api.put(`/documents/${id}`, {
+      title: newTitle,
+      content: newContent
+    });
+    setSaveStatus('All changes saved');
+  };
+
+  const handleTitleChange = (e) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    triggerDebounce(newTitle, content);
+  };
+
+  const handleContentChange = (e) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    triggerDebounce(title, newContent);
+  };
+
+  const triggerDebounce = (newTitle, newContent) => {
+    setSaveStatus('Unsaved changes...');
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      save(newTitle, newContent);
+    }, 1000);
   };
 
   return (
     <div>
       <div>
         <button onClick={() => navigate('/dashboard')}>← Back</button>
-        <button onClick={save}>{saving ? 'Saving...' : 'Save'}</button>
+        <span>{saveStatus}</span>
       </div>
       <input
         type="text"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={handleTitleChange}
         placeholder="Document title"
       />
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={handleContentChange}
         placeholder="Start typing..."
         rows={20}
         style={{ width: '100%' }}
