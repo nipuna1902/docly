@@ -19,10 +19,7 @@ function Editor() {
 
   const save = async (newTitle, newContent) => {
     setSaveStatus('Saving...');
-    await api.put(`/documents/${id}`, {
-      title: newTitle,
-      content: newContent
-    });
+    await api.put(`/documents/${id}`, { title: newTitle, content: newContent });
     setSaveStatus('All changes saved');
   };
 
@@ -47,24 +44,34 @@ function Editor() {
   };
 
   return (
-    <div>
-      <div>
-        <button onClick={() => navigate('/dashboard')}>← Back</button>
-        <span>{saveStatus}</span>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      {/* Toolbar */}
+      <div className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="text-gray-400 hover:text-white text-sm transition"
+        >
+          ← Back
+        </button>
+        <span className="text-xs text-gray-500">{saveStatus}</span>
       </div>
-      <input
-        type="text"
-        value={title}
-        onChange={handleTitleChange}
-        placeholder="Document title"
-      />
-      <textarea
-        value={content}
-        onChange={handleContentChange}
-        placeholder="Start typing..."
-        rows={20}
-        style={{ width: '100%' }}
-      />
+
+      {/* Editor area */}
+      <div className="max-w-3xl mx-auto w-full px-6 py-10 flex flex-col flex-1">
+        <input
+          type="text"
+          value={title}
+          onChange={handleTitleChange}
+          placeholder="Untitled Document"
+          className="bg-transparent text-3xl font-bold text-white placeholder-gray-700 outline-none mb-6 w-full"
+        />
+        <textarea
+          value={content}
+          onChange={handleContentChange}
+          placeholder="Start writing..."
+          className="bg-transparent text-gray-300 placeholder-gray-700 outline-none resize-none flex-1 text-base leading-relaxed w-full"
+        />
+      </div>
     </div>
   );
 }

@@ -19,23 +19,47 @@ function Signup() {
   };
 
   return (
-    <div>
-      <h1>Create a Docly Account</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button onClick={handleSignup}>Sign Up</button>
-      <p>Already have an account? <Link to="/login">Login</Link></p>
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="bg-gray-900 p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <h1 className="text-3xl font-bold text-white text-center mb-2">Docly</h1>
+        <p className="text-gray-400 text-center mb-6">Create a new account</p>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-gray-800 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 transition"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-gray-800 text-white placeholder-gray-500 px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 transition"
+          />
+          <button
+            onClick={handleSignup}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <p className="text-gray-500 text-center mt-6 text-sm">
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-400 hover:text-blue-300 transition">
+            Login
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
