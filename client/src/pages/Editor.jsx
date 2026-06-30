@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import api from '../api/axios.js';
+
+const socket = io('http://localhost:5000');
 
 function Editor() {
   const { id } = useParams();
@@ -15,6 +18,17 @@ function Editor() {
       setTitle(res.data.title);
       setContent(res.data.content);
     });
+
+    socket.emit('join-document', id);
+
+    socket.on('document-updated', ({ title: newTitle, content: newContent }) => {
+      setTitle(newTitle);
+      setContent(newContent);
+    });
+
+    return () => {
+      socket.off('document-updated');
+    };
   }, [id]);
 
   const save = async (newTitle, newContent) => {
@@ -26,16 +40,18 @@ function Editor() {
   const handleTitleChange = (e) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    triggerDebounce(newTitle, content);
+    broadcastAndDebounce(newTitle, content);
   };
 
   const handleContentChange = (e) => {
     const newContent = e.target.value;
     setContent(newContent);
-    triggerDebounce(title, newContent);
+    broadcastAndDebounce(title, newContent);
   };
 
-  const triggerDebounce = (newTitle, newContent) => {
+  const broadcastAndDebounce = (newTitle, newContent) => {
+    socket.emit('edit-document', { documentId: id, title: newTitle, content: newContent });
+
     setSaveStatus('Unsaved changes...');
     clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
@@ -45,7 +61,6 @@ function Editor() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      {/* Toolbar */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <button
           onClick={() => navigate('/dashboard')}
@@ -56,7 +71,6 @@ function Editor() {
         <span className="text-xs text-gray-500">{saveStatus}</span>
       </div>
 
-      {/* Editor area */}
       <div className="max-w-3xl mx-auto w-full px-6 py-10 flex flex-col flex-1">
         <input
           type="text"
