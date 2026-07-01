@@ -43,14 +43,40 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   res.status(201).json(document);
 });
 
-// PUT /api/documents/:id - update a document
+// PUT /api/documents/:id - update a document with conflict detection
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
-  const { title, content } = req.body;
+  const { title, content, baseVersion } = req.body;
+
+  const current = await prisma.document.findUnique({
+    where: { id: parseInt(id), ownerId: req.userId }
+  });
+
+  if (!current) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+
+  // Conflict check: did the document change since the client last fetched it?
+  if (baseVersion !== undefined && baseVersion !== current.version) {
+    res.status(409).json({
+      error: 'Conflict: document was modified elsewhere',
+      serverVersion: current.version,
+      serverTitle: current.title,
+      serverContent: current.content,
+    });
+    return;
+  }
+
   const document = await prisma.document.update({
     where: { id: parseInt(id), ownerId: req.userId },
-    data: { title, content }
+    data: {
+      title,
+      content,
+      version: { increment: 1 }
+    }
   });
+
   res.json(document);
 });
 
