@@ -3,30 +3,53 @@ import type { Response } from 'express';
 import prisma from '../prisma/client.ts';
 import { authenticate } from '../middleware/auth.ts';
 import type { AuthRequest } from '../middleware/auth.ts';
+import { pubClient as redis } from '../index.ts';
 
 const router = express.Router();
-
 router.use(authenticate);
+
+const CACHE_TTL = 60; // seconds
 
 // GET /api/documents - get all documents
 router.get('/', async (req: AuthRequest, res: Response) => {
+  const cacheKey = `documents:user:${req.userId}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    res.json(JSON.parse(cached));
+    return;
+  }
+
   const documents = await prisma.document.findMany({
     where: { ownerId: req.userId },
     orderBy: { updatedAt: 'desc' }
   });
+
+  await redis.setEx(cacheKey, CACHE_TTL, JSON.stringify(documents));
   res.json(documents);
 });
 
 // GET /api/documents/:id - get one document
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
+  const cacheKey = `document:${id}:user:${req.userId}`;
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    res.json(JSON.parse(cached));
+    return;
+  }
+
   const document = await prisma.document.findUnique({
     where: { id: parseInt(id), ownerId: req.userId }
   });
+
   if (!document) {
     res.status(404).json({ error: 'Document not found' });
     return;
   }
+
+  await redis.setEx(cacheKey, CACHE_TTL, JSON.stringify(document));
   res.json(document);
 });
 
@@ -40,10 +63,13 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       ownerId: req.userId as number
     }
   });
+
+  // Invalidate the user's document list cache
+  await redis.del(`documents:user:${req.userId}`);
   res.status(201).json(document);
 });
 
-// PUT /api/documents/:id - update a document with conflict detection
+// PUT /api/documents/:id - update with conflict detection
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
   const { title, content, baseVersion } = req.body;
@@ -57,7 +83,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  // Conflict check: did the document change since the client last fetched it?
   if (baseVersion !== undefined && baseVersion !== current.version) {
     res.status(409).json({
       error: 'Conflict: document was modified elsewhere',
@@ -70,12 +95,12 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
   const document = await prisma.document.update({
     where: { id: parseInt(id), ownerId: req.userId },
-    data: {
-      title,
-      content,
-      version: { increment: 1 }
-    }
+    data: { title, content, version: { increment: 1 } }
   });
+
+  // Invalidate caches for this document and the user's list
+  await redis.del(`document:${id}:user:${req.userId}`);
+  await redis.del(`documents:user:${req.userId}`);
 
   res.json(document);
 });
@@ -86,6 +111,11 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
   await prisma.document.delete({
     where: { id: parseInt(id), ownerId: req.userId }
   });
+
+  // Invalidate caches
+  await redis.del(`document:${id}:user:${req.userId}`);
+  await redis.del(`documents:user:${req.userId}`);
+
   res.json({ message: 'Document deleted' });
 });
 

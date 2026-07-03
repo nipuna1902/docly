@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import documentRoutes from './routes/documents.ts';
 import authRoutes from './routes/auth.ts';
 
@@ -16,10 +18,22 @@ app.use('/api/auth', authRoutes);
 
 const httpServer = createServer(app);
 
+// Redis clients — pub/sub requires two separate clients
+const pubClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+const subClient = pubClient.duplicate();
+
 const io = new Server(httpServer, {
-  cors: {
-    origin: 'http://localhost:5173',
-  },
+  cors: { origin: 'http://localhost:5173' }
+});
+
+// Connect Redis and attach adapter before starting server
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+  io.adapter(createAdapter(pubClient, subClient));
+  console.log('Redis adapter connected');
+
+  httpServer.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
 });
 
 io.on('connection', (socket) => {
@@ -39,6 +53,4 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+export { pubClient };
