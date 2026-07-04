@@ -6,6 +6,7 @@ import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import documentRoutes from './routes/documents.js';
 import authRoutes from './routes/auth.js';
+import shareRoutes from './routes/shares.js';
 
 const app = express();
 const PORT = 5000;
@@ -15,6 +16,7 @@ app.use(express.json());
 
 app.use('/api/documents', documentRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/shares', shareRoutes);
 
 const httpServer = createServer(app);
 

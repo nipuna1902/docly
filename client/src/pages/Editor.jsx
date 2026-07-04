@@ -51,28 +51,20 @@ function MenuBar({ editor }) {
       {btn(() => editor.chain().focus().toggleUnderline().run(), 'U', editor.isActive('underline'))}
       {btn(() => editor.chain().focus().toggleStrike().run(), 'S', editor.isActive('strike'))}
       {btn(() => editor.chain().focus().toggleHighlight().run(), 'H', editor.isActive('highlight'))}
-
       <div className="w-px h-5 bg-gray-700 mx-1" />
-
       {btn(() => editor.chain().focus().toggleHeading({ level: 1 }).run(), 'H1', editor.isActive('heading', { level: 1 }))}
       {btn(() => editor.chain().focus().toggleHeading({ level: 2 }).run(), 'H2', editor.isActive('heading', { level: 2 }))}
       {btn(() => editor.chain().focus().toggleHeading({ level: 3 }).run(), 'H3', editor.isActive('heading', { level: 3 }))}
-
       <div className="w-px h-5 bg-gray-700 mx-1" />
-
       {btn(() => editor.chain().focus().toggleBulletList().run(), '• List', editor.isActive('bulletList'))}
       {btn(() => editor.chain().focus().toggleOrderedList().run(), '1. List', editor.isActive('orderedList'))}
       {btn(() => editor.chain().focus().toggleBlockquote().run(), '" Quote', editor.isActive('blockquote'))}
       {btn(() => editor.chain().focus().toggleCodeBlock().run(), '</> Code', editor.isActive('codeBlock'))}
-
       <div className="w-px h-5 bg-gray-700 mx-1" />
-
       {btn(() => editor.chain().focus().setTextAlign('left').run(), '⬅', editor.isActive({ textAlign: 'left' }))}
       {btn(() => editor.chain().focus().setTextAlign('center').run(), '⬛', editor.isActive({ textAlign: 'center' }))}
       {btn(() => editor.chain().focus().setTextAlign('right').run(), '➡', editor.isActive({ textAlign: 'right' }))}
-
       <div className="w-px h-5 bg-gray-700 mx-1" />
-
       {btn(() => editor.chain().focus().undo().run(), '↩ Undo')}
       {btn(() => editor.chain().focus().redo().run(), '↪ Redo')}
     </div>
@@ -90,10 +82,40 @@ function Editor() {
   const [conflict, setConflict] = useState(null);
   const [docData, setDocData] = useState(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareStatus, setShareStatus] = useState('');
+  const [shares, setShares] = useState([]);
 
   const debounceTimer = useRef(null);
   const isRemoteUpdate = useRef(false);
   const hasMounted = useRef(false);
+
+  const loadShares = useCallback(async () => {
+    try {
+      const res = await api.get(`/shares/${id}`);
+      setShares(res.data);
+    } catch {
+      // shares endpoint only works for owners, silently fail for shared users
+    }
+  }, [id]);
+
+  const shareDocument = async () => {
+    if (!shareEmail) return;
+    try {
+      await api.post(`/shares/${id}`, { email: shareEmail });
+      setShareEmail('');
+      setShareStatus(`Shared with ${shareEmail}`);
+      loadShares();
+    } catch (err) {
+      setShareStatus(err.response?.data?.error || 'Failed to share');
+    }
+  };
+
+  const revokeAccess = async (userId) => {
+    await api.delete(`/shares/${id}/${userId}`);
+    loadShares();
+  };
 
   const editor = useEditor({
     extensions: [
@@ -120,7 +142,6 @@ function Editor() {
       clearOfflineEdit(id);
       setBaseVersion(res.data.version);
       setSaveStatus('All changes saved');
-      socket.emit('document-saved', { documentId: id, version: res.data.version });
     } catch (err) {
       if (err.response?.status === 409) {
         if (isOfflineSync) {
@@ -133,7 +154,6 @@ function Editor() {
           });
           setSaveStatus('Conflict detected');
         } else {
-          // Online edit: update baseVersion and retry sync
           setBaseVersion(err.response.data.serverVersion);
           syncToServer(newTitle, newContent, err.response.data.serverVersion, false);
         }
@@ -144,11 +164,7 @@ function Editor() {
   }, [id]);
 
   const broadcastAndDebounce = useCallback((newTitle, newContent) => {
-    socket.emit('edit-document', {
-      documentId: id,
-      title: newTitle,
-      content: newContent
-    });
+    socket.emit('edit-document', { documentId: id, title: newTitle, content: newContent });
 
     if (!isOnline) {
       saveOfflineEdit(id, { title: newTitle, content: newContent, baseVersion });
@@ -163,7 +179,6 @@ function Editor() {
     }, 1000);
   }, [id, isOnline, baseVersion, syncToServer]);
 
-  // Fetch document data once on mount / ID change
   useEffect(() => {
     setDocData(null);
     setIsDataLoaded(false);
@@ -174,9 +189,6 @@ function Editor() {
         setBaseVersion(offline.baseVersion);
         setDocData(offline);
         setSaveStatus('Unsynced offline changes');
-        if (navigator.onLine) {
-          syncToServer(offline.title, offline.content, offline.baseVersion, true);
-        }
       } else {
         setTitle(res.data.title);
         setBaseVersion(res.data.version);
@@ -186,12 +198,11 @@ function Editor() {
     });
 
     socket.emit('join-document', id);
-  }, [id, syncToServer]);
+    loadShares();
+  }, [id, loadShares]);
 
-  // Set editor content once editor and document data are ready
   useEffect(() => {
     if (!editor || !isDataLoaded || !docData) return;
-
     isRemoteUpdate.current = true;
     const content = docData.content;
     if (content) {
@@ -202,12 +213,9 @@ function Editor() {
         editor.commands.setContent(content);
       }
     }
-    setTimeout(() => {
-      isRemoteUpdate.current = false;
-    }, 100);
+    setTimeout(() => { isRemoteUpdate.current = false; }, 100);
   }, [editor, isDataLoaded, docData]);
 
-  // Listen to remote socket updates and version updates
   useEffect(() => {
     if (!editor) return;
 
@@ -215,9 +223,7 @@ function Editor() {
       isRemoteUpdate.current = true;
       setTitle(newTitle);
       try {
-        const parsed = typeof newContent === 'string'
-          ? JSON.parse(newContent)
-          : newContent;
+        const parsed = typeof newContent === 'string' ? JSON.parse(newContent) : newContent;
         editor.commands.setContent(parsed);
       } catch {
         editor.commands.setContent(newContent);
@@ -225,33 +231,19 @@ function Editor() {
       setTimeout(() => { isRemoteUpdate.current = false; }, 100);
     };
 
-    const handleVersionUpdated = ({ version }) => {
-      setBaseVersion(version);
-    };
-
     socket.on('document-updated', handleDocumentUpdated);
-    socket.on('version-updated', handleVersionUpdated);
-
-    return () => {
-      socket.off('document-updated', handleDocumentUpdated);
-      socket.off('version-updated', handleVersionUpdated);
-    };
+    return () => socket.off('document-updated', handleDocumentUpdated);
   }, [editor]);
 
-  // Listen to local editor updates dynamically with latest dependencies
   useEffect(() => {
     if (!editor) return;
-
     const handleUpdate = () => {
       if (isRemoteUpdate.current) return;
       const json = editor.getJSON();
       broadcastAndDebounce(title, json);
     };
-
     editor.on('update', handleUpdate);
-    return () => {
-      editor.off('update', handleUpdate);
-    };
+    return () => editor.off('update', handleUpdate);
   }, [editor, title, broadcastAndDebounce]);
 
   useEffect(() => {
@@ -339,6 +331,58 @@ function Editor() {
 
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col overflow-hidden">
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Share Document</h3>
+              <button
+                onClick={() => { setShowShareModal(false); setShareStatus(''); }}
+                className="text-gray-500 hover:text-white transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="email"
+                placeholder="Enter email address"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                className="flex-1 bg-gray-800 text-white placeholder-gray-500 px-3 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 text-sm"
+              />
+              <button
+                onClick={shareDocument}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+              >
+                Share
+              </button>
+            </div>
+            {shareStatus && (
+              <p className="text-sm text-gray-400 mb-3">{shareStatus}</p>
+            )}
+            {shares.length > 0 && (
+              <div className="border-t border-gray-800 pt-3">
+                <p className="text-xs text-gray-500 mb-2 uppercase tracking-wide">People with access</p>
+                {shares.map((share) => (
+                  <div key={share.id} className="flex items-center justify-between py-2">
+                    <span className="text-sm text-gray-300">{share.user.email}</span>
+                    <button
+                      onClick={() => revokeAccess(share.userId)}
+                      className="text-xs text-red-400 hover:text-red-300 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Navbar */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between flex-shrink-0">
         <button
           onClick={() => navigate('/dashboard')}
@@ -353,13 +397,21 @@ function Editor() {
             </span>
           )}
           <span className="text-xs text-gray-500">{saveStatus}</span>
+          <button
+            onClick={() => { setShowShareModal(true); loadShares(); }}
+            className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1 rounded-lg border border-gray-700 transition"
+          >
+            Share
+          </button>
         </div>
       </div>
 
+      {/* Toolbar */}
       <div className="flex-shrink-0">
         <MenuBar editor={editor} />
       </div>
 
+      {/* Editor area */}
       <div className="flex-1 bg-gray-950 py-10 px-4 overflow-y-auto scrollbar-hide">
         <div className="max-w-3xl mx-auto bg-gray-900 border border-gray-800 rounded-xl shadow-2xl px-12 py-16 min-h-[calc(100vh-200px)]">
           <input

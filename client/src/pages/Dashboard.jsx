@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 
 function Dashboard() {
-  const [documents, setDocuments] = useState([]);
+  const [ownedDocs, setOwnedDocs] = useState([]);
+  const [sharedDocs, setSharedDocs] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/documents').then((res) => setDocuments(res.data));
+    api.get('/documents').then((res) => {
+      setOwnedDocs(res.data.owned || []);
+      setSharedDocs(res.data.shared || []);
+    });
   }, []);
 
   const createDocument = async () => {
@@ -17,7 +21,7 @@ function Dashboard() {
 
   const deleteDocument = async (id) => {
     await api.delete(`/documents/${id}`);
-    setDocuments(documents.filter((doc) => doc.id !== id));
+    setOwnedDocs(ownedDocs.filter((doc) => doc.id !== id));
   };
 
   const logout = () => {
@@ -25,9 +29,32 @@ function Dashboard() {
     navigate('/login');
   };
 
+  const DocCard = ({ doc, showDelete }) => (
+    <div
+      key={doc.id}
+      className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between hover:border-gray-700 transition cursor-pointer group"
+    >
+      <div onClick={() => navigate(`/editor/${doc.id}`)}>
+        <p className="font-medium text-white group-hover:text-blue-400 transition">
+          {doc.title}
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Last edited {new Date(doc.updatedAt).toLocaleDateString()}
+        </p>
+      </div>
+      {showDelete && (
+        <button
+          onClick={() => deleteDocument(doc.id)}
+          className="text-gray-600 hover:text-red-400 text-sm transition ml-4"
+        >
+          Delete
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col overflow-hidden">
-      {/* Navbar */}
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between flex-shrink-0">
         <h1 className="text-xl font-bold text-white">Docly</h1>
         <button
@@ -38,7 +65,6 @@ function Dashboard() {
         </button>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-4xl mx-auto px-6 py-10">
           <div className="flex items-center justify-between mb-8">
@@ -51,35 +77,28 @@ function Dashboard() {
             </button>
           </div>
 
-          {documents.length === 0 ? (
-            <div className="text-center py-20 text-gray-600">
+          {ownedDocs.length === 0 ? (
+            <div className="text-center py-12 text-gray-600">
               <p className="text-lg">No documents yet</p>
               <p className="text-sm mt-1">Click "New Document" to get started</p>
             </div>
           ) : (
-            <div className="grid gap-3">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between hover:border-gray-700 transition cursor-pointer group"
-                >
-                  <div onClick={() => navigate(`/editor/${doc.id}`)}>
-                    <p className="font-medium text-white group-hover:text-blue-400 transition">
-                      {doc.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Last edited {new Date(doc.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => deleteDocument(doc.id)}
-                    className="text-gray-600 hover:text-red-400 text-sm transition ml-4"
-                  >
-                    Delete
-                  </button>
-                </div>
+            <div className="grid gap-3 mb-10">
+              {ownedDocs.map((doc) => (
+                <DocCard key={doc.id} doc={doc} showDelete={true} />
               ))}
             </div>
+          )}
+
+          {sharedDocs.length > 0 && (
+            <>
+              <h2 className="text-2xl font-semibold mb-6">Shared with me</h2>
+              <div className="grid gap-3">
+                {sharedDocs.map((doc) => (
+                  <DocCard key={doc.id} doc={doc} showDelete={false} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

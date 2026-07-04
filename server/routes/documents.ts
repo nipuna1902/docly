@@ -20,13 +20,24 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  const documents = await prisma.document.findMany({
-    where: { ownerId: req.userId },
-    orderBy: { updatedAt: 'desc' }
-  });
+  const [ownedDocuments, sharedDocuments] = await Promise.all([
+    prisma.document.findMany({
+      where: { ownerId: req.userId },
+      orderBy: { updatedAt: 'desc' }
+    }),
+    prisma.document.findMany({
+      where: { shares: { some: { userId: req.userId } } },
+      orderBy: { updatedAt: 'desc' }
+    })
+  ]);
 
-  await redis.setEx(cacheKey, CACHE_TTL, JSON.stringify(documents));
-  res.json(documents);
+  const result = {
+    owned: ownedDocuments,
+    shared: sharedDocuments
+  };
+
+  await redis.setEx(cacheKey, CACHE_TTL, JSON.stringify(result));
+  res.json(result);
 });
 
 // GET /api/documents/:id - get one document
@@ -40,8 +51,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  const document = await prisma.document.findUnique({
-    where: { id: parseInt(id), ownerId: req.userId }
+  const document = await prisma.document.findFirst({
+    where: {
+      id: parseInt(id),
+      OR: [
+        { ownerId: req.userId },
+        { shares: { some: { userId: req.userId } } }
+      ]
+    }
   });
 
   if (!document) {
