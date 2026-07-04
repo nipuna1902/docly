@@ -3,7 +3,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import prisma from '../prisma/client.ts';
+import prisma from '../prisma/client.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET as string;

@@ -7,8 +7,10 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+RUN npx prisma generate
+RUN npx tsc --project tsconfig.build.json
+RUN cp -r generated dist/
 
 EXPOSE 5000
 
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node --experimental-specifier-resolution=node dist/index.js"]

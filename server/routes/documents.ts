@@ -1,21 +1,21 @@
 import express from 'express';
 import type { Response } from 'express';
-import prisma from '../prisma/client.ts';
-import { authenticate } from '../middleware/auth.ts';
-import type { AuthRequest } from '../middleware/auth.ts';
-import { pubClient as redis } from '../index.ts';
+import prisma from '../prisma/client.js';
+import { authenticate } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
+import { pubClient as redis } from '../index.js';
 
 const router = express.Router();
 router.use(authenticate);
 
-const CACHE_TTL = 60; // seconds
+const CACHE_TTL = 60;
 
 // GET /api/documents - get all documents
 router.get('/', async (req: AuthRequest, res: Response) => {
   const cacheKey = `documents:user:${req.userId}`;
 
-  const cached = await redis.get(cacheKey);
-  if (cached) {
+  const cached = await redis.get(cacheKey) as string | null;
+  if (cached !== null) {
     res.json(JSON.parse(cached));
     return;
   }
@@ -34,8 +34,8 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
   const cacheKey = `document:${id}:user:${req.userId}`;
 
-  const cached = await redis.get(cacheKey);
-  if (cached) {
+  const cached = await redis.get(cacheKey) as string | null;
+  if (cached !== null) {
     res.json(JSON.parse(cached));
     return;
   }
@@ -64,7 +64,6 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     }
   });
 
-  // Invalidate the user's document list cache
   await redis.del(`documents:user:${req.userId}`);
   res.status(201).json(document);
 });
@@ -98,7 +97,6 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     data: { title, content, version: { increment: 1 } }
   });
 
-  // Invalidate caches for this document and the user's list
   await redis.del(`document:${id}:user:${req.userId}`);
   await redis.del(`documents:user:${req.userId}`);
 
@@ -112,7 +110,6 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     where: { id: parseInt(id), ownerId: req.userId }
   });
 
-  // Invalidate caches
   await redis.del(`document:${id}:user:${req.userId}`);
   await redis.del(`documents:user:${req.userId}`);
 
