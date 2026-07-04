@@ -8,3 +8,70 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+.ProseMirror {
+  outline: none;
+  min-height: 400px;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #4b5563;
+  padding-left: 1rem;
+  color: #9ca3af;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror pre {
+  background: #1f2937;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-family: monospace;
+  overflow-x: auto;
+}
+
+.ProseMirror mark {
+  background-color: #854d0e;
+  color: #fef3c7;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #374151;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

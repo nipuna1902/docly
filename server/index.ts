@@ -48,6 +48,10 @@ io.on('connection', (socket) => {
     socket.to(documentId).emit('document-updated', { title, content });
   });
 
+  socket.on('document-saved', ({ documentId, version }) => {
+    socket.to(documentId).emit('version-updated', { version });
+  });
+
   socket.on('disconnect', () => {
     console.log('A user disconnected:', socket.id);
   });
