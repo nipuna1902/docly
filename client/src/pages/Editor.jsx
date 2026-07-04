@@ -10,7 +10,7 @@ import api from '../api/axios.js';
 import useOnlineStatus from '../hooks/useOnlineStatus.js';
 import { saveOfflineEdit, getOfflineEdit, clearOfflineEdit } from '../utils/offlineStorage.js';
 
-const socket = io('http://localhost:5000');
+const socket = io(import.meta.env.VITE_SOCKET_URL);
 
 function extractPlainText(content) {
   if (!content) return '';

@@ -24,8 +24,14 @@ const httpServer = createServer(app);
 const pubClient = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 const subClient = pubClient.duplicate();
 
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
+app.use(cors({ origin: ALLOWED_ORIGINS }));
+
 const io = new Server(httpServer, {
-  cors: { origin: 'http://localhost:5173' }
+  cors: { origin: ALLOWED_ORIGINS }
 });
 
 // Connect Redis and attach adapter before starting server

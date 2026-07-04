@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Instead of writing http://localhost:5000/api/documents on every call, you just write /documents and axios prepends the base URL automatically.
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
 });
 
 // reads the JWT token from localStorage and attaches it as an Authorization: Bearer <token> header.This means you never have to manually attach the token in your components — it happens automatically on every single API call.
