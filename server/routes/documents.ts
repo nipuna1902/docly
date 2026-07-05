@@ -90,8 +90,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   const id = req.params.id as string;
   const { title, content, baseVersion } = req.body;
 
-  const current = await prisma.document.findUnique({
-    where: { id: parseInt(id), ownerId: req.userId }
+  const current = await prisma.document.findFirst({
+    where: {
+      id: parseInt(id),
+      OR: [
+        { ownerId: req.userId },
+        { shares: { some: { userId: req.userId } } }
+      ]
+    }
   });
 
   if (!current) {
@@ -110,7 +116,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   }
 
   const document = await prisma.document.update({
-    where: { id: parseInt(id), ownerId: req.userId },
+    where: { id: parseInt(id) },
     data: { title, content, version: { increment: 1 } }
   });
 
