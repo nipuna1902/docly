@@ -24,7 +24,7 @@ This is a code-based assessment of the current repository, not a security certif
 
 Use HTTPS; secure cookies if adopted; strict CSP/security headers; constrained CORS; secrets management; least-privilege database and Redis credentials; request-size limits; validation; rate limits; dependency scanning; logging without credentials/content; monitoring; backups; and an incident/revocation procedure. Re-test authorization for both REST and sockets after every collaboration change.
 
-## Security interview answers
+## Security design notes
 
 **Why is frontend route protection insufficient?** A user can modify browser JavaScript or call the API directly. `ProtectedRoute` only hides UI routes; Express authorization tied to a verified identity is the actual control.
 

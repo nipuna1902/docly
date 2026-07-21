@@ -53,7 +53,7 @@ flowchart LR
 
 The user ID in the key is an isolation aid: an authorized result cached for one user is not directly returned to another. It does not remove the need for authorization before a cache fill, and it does not make invalidation complete.
 
-## Interview-relevant implementation details
+## Implementation details worth noting
 
 - `import 'dotenv/config'` appears in the auth middleware and Prisma client, so environment loading occurs in imported modules rather than only the entry point. This works, but a single explicit bootstrap location is easier to audit.
 - The Prisma client is a module singleton. That prevents excessive connection creation inside one Node process; in hot-reload/serverless contexts, global singleton handling may need further care.

@@ -122,6 +122,6 @@ This repository is documented as a small reference set. Start here, then follow 
 | How does the server work? | [Server guide](./docs/SERVER.md) |
 | What should I know before extending it? | [Development guide](./docs/DEVELOPMENT.md) |
 | What security and production gaps remain? | [Security notes](./docs/SECURITY.md) |
-| How would I explain or defend this project in an interview? | [Interview guide](./docs/INTERVIEW.md) |
+| Where can I find a detailed walkthrough of design and trade-offs? | [Technical deep dive](./docs/DEEP_DIVE.md) |
 
 The documentation describes the current implementation. In particular, Socket.IO room membership is not authenticated and the Compose stack starts only the API, database, and Redis; the Vite client is run separately.

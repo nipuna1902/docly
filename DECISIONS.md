@@ -1,6 +1,6 @@
 # Engineering Decisions & Problem Solving
 
-This document explains the key technical decisions made during the build of Docly, and how complex problems were tackled. Useful for interviews, code reviews, or revisiting the project.
+This document explains the key technical decisions made during the build of Docly, and how complex problems were tackled. Useful for code reviews or revisiting the project.
 
 ---
 

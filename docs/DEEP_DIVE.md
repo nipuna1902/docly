@@ -1,6 +1,6 @@
-# Interview guide: explaining Docly
+# Technical deep dive
 
-This guide is a map from an interview question to the exact code and a concise, technically honest answer. It describes what the repository does today, separates implemented behavior from intended production evolution, and avoids overstating the real-time model.
+This guide maps the project’s important behaviors to the relevant code and explains the resulting technical trade-offs. It distinguishes current implementation from intended production evolution and avoids overstating the real-time model.
 
 ## 60-second project explanation
 
@@ -38,7 +38,7 @@ If asked to read the project in order, begin with `README.md`, then `client/src/
 | Sharing | Editor share modal | `routes/shares.ts`, `DocumentShare` | Owner invites a pre-existing user by email |
 | Scaling/cache | none directly | Redis + Socket.IO adapter | Redis cache is 60 seconds; adapter forwards room traffic |
 
-## Deep-dive questions and answers
+## Key technical topics
 
 ### Why PostgreSQL rather than MongoDB?
 
@@ -54,7 +54,7 @@ At signup, the server hashes the password with bcrypt cost factor 10 and writes 
 
 ### How does real-time collaboration work?
 
-Opening an editor emits `join-document(id)`. The server puts the socket in a room named by that ID. A local edit emits `edit-document`; `socket.to(documentId)` sends `document-updated` to all room peers except the sender, preventing sender echo loops. Redis adapter pub/sub forwards those room broadcasts between API instances. HTTP autosave is independent: it runs after a one-second debounce and commits to PostgreSQL. In an interview, call this a lightweight collaboration signal path, not a full collaborative editing algorithm.
+Opening an editor emits `join-document(id)`. The server puts the socket in a room named by that ID. A local edit emits `edit-document`; `socket.to(documentId)` sends `document-updated` to all room peers except the sender, preventing sender echo loops. Redis adapter pub/sub forwards those room broadcasts between API instances. HTTP autosave is independent: it runs after a one-second debounce and commits to PostgreSQL. This is a lightweight collaboration signal path, not a full collaborative editing algorithm.
 
 ### Why is Socket.IO combined with Redis?
 
@@ -108,7 +108,7 @@ Prioritize by risk and user impact:
 6. Decide product-grade collaboration direction: CRDT/OT provider, durable operation log, cursor/presence, and merge UX.
 7. Add deployment health checks, observability, backups, migrations policy, TLS, and a CI pipeline.
 
-## Questions to avoid answering imprecisely
+## Accurate terminology and boundaries
 
 | Do not say | Say instead |
 |---|---|
@@ -127,4 +127,4 @@ Prioritize by risk and user impact:
 5. Reconnect B and show the version conflict screen; explain the whole-document choice.
 6. Revoke B from A and explain that REST access is denied after cache expiry, while noting the current cache/socket limitations honestly.
 
-For questions not covered here, use the [architecture](./ARCHITECTURE.md), [API](./API.md), [database](./DATABASE.md), and [security](./SECURITY.md) references as the deeper source of record.
+For further detail, use the [architecture](./ARCHITECTURE.md), [API](./API.md), [database](./DATABASE.md), and [security](./SECURITY.md) references as the source of record.
