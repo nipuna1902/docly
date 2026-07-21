@@ -127,3 +127,5 @@ npm run dev      # Vite development server (http://localhost:5173)
 npm run build    # Production build to dist/
 npm run preview  # Preview production build locally
 ```
+
+For routes, editor state, environment variables, and extension guidance, see the root [documentation map](../README.md#documentation-map) and [client guide](../docs/CLIENT.md).

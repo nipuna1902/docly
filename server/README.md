@@ -130,3 +130,5 @@ npm run dev      # ts-node development server
 npm run build    # compile TypeScript to dist/
 npm run start    # run compiled dist/index.js (production)
 ```
+
+For the implementation-level API contract, cache behavior, environment variables, and operational caveats, see the root [documentation map](../README.md#documentation-map) and [server guide](../docs/SERVER.md).

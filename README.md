@@ -12,7 +12,7 @@ Think Google Docs, but with one feature Google Docs doesn't have: **conflict-awa
 |---|---|
 | Frontend | React + Vite + Tailwind CSS |
 | Rich Text | TipTap (ProseMirror-based) |
-| Routing | React Router v6 |
+| Routing | React Router v7 |
 | HTTP Client | Axios with JWT interceptor |
 | Backend | Node.js + Express + TypeScript |
 | Database | PostgreSQL via Prisma ORM |
@@ -50,7 +50,7 @@ docly/
 
 ## Running Locally
 
-### Option A — Docker (recommended, runs everything)
+### Option A — Docker (API, database, and Redis)
 
 ```bash
 docker-compose up --build
@@ -105,3 +105,23 @@ npm run dev
 ## Key Engineering Decisions
 
 See [DECISIONS.md](./DECISIONS.md) for in-depth reasoning behind major technical choices and how complex problems were solved.
+
+---
+
+## Documentation map
+
+This repository is documented as a small reference set. Start here, then follow the document that matches the question you are trying to answer:
+
+| Question | Reference |
+|---|---|
+| How do the pieces communicate? | [Architecture](./docs/ARCHITECTURE.md) |
+| How do I run, deploy, or troubleshoot it? | [Operations](./docs/OPERATIONS.md) |
+| What endpoints, inputs, and responses exist? | [API reference](./docs/API.md) |
+| What is stored and how is it related? | [Data model](./docs/DATABASE.md) |
+| How does the editor/client work? | [Client guide](./docs/CLIENT.md) |
+| How does the server work? | [Server guide](./docs/SERVER.md) |
+| What should I know before extending it? | [Development guide](./docs/DEVELOPMENT.md) |
+| What security and production gaps remain? | [Security notes](./docs/SECURITY.md) |
+| How would I explain or defend this project in an interview? | [Interview guide](./docs/INTERVIEW.md) |
+
+The documentation describes the current implementation. In particular, Socket.IO room membership is not authenticated and the Compose stack starts only the API, database, and Redis; the Vite client is run separately.
