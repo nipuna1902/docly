@@ -1,30 +1,43 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 
-function Dashboard() {
+function Dashboard({ preview = false }) {
   const [ownedDocs, setOwnedDocs] = useState([]);
   const [sharedDocs, setSharedDocs] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (preview) {
+      setOwnedDocs([
+        { id: 'sample-brief', title: 'Project brief', updatedAt: new Date() },
+        { id: 'sample-notes', title: 'Meeting notes', updatedAt: new Date() },
+      ]);
+      return;
+    }
     api.get('/documents').then((res) => {
       setOwnedDocs(res.data.owned || []);
       setSharedDocs(res.data.shared || []);
     });
-  }, []);
+  }, [preview]);
 
   const createDocument = async () => {
+    if (preview) return;
     const res = await api.post('/documents', {});
     navigate(`/editor/${res.data.id}`);
   };
 
   const deleteDocument = async (id) => {
+    if (preview) return;
     await api.delete(`/documents/${id}`);
     setOwnedDocs(ownedDocs.filter((doc) => doc.id !== id));
   };
 
   const logout = () => {
+    if (preview) {
+      navigate('/');
+      return;
+    }
     localStorage.removeItem('token');
     navigate('/login');
   };
@@ -32,9 +45,9 @@ function Dashboard() {
   const DocCard = ({ doc, showDelete }) => (
     <div
       key={doc.id}
-      className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between hover:border-gray-700 transition cursor-pointer group"
+      className={`bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between hover:border-gray-700 transition group ${preview ? '' : 'cursor-pointer'}`}
     >
-      <div onClick={() => navigate(`/editor/${doc.id}`)}>
+      <div onClick={() => !preview && navigate(`/editor/${doc.id}`)}>
         <p className="font-medium text-white group-hover:text-blue-400 transition">
           {doc.title}
         </p>
@@ -56,12 +69,12 @@ function Dashboard() {
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col overflow-hidden">
       <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-xl font-bold text-white">Docly</h1>
+        <Link to="/" className="text-xl font-bold text-white transition hover:text-blue-400">Docly</Link>
         <button
           onClick={logout}
           className="text-gray-400 hover:text-white text-sm transition"
         >
-          Logout
+          {preview ? 'View landing page' : 'Logout'}
         </button>
       </div>
 

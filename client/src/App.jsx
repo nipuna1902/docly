@@ -1,9 +1,8 @@
 //router setup
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login.jsx';
-import Signup from './pages/Signup.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Editor from './pages/Editor.jsx';
+import Landing from './pages/Landing.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 function App() {
@@ -11,9 +10,9 @@ function App() {
     <div className="bg-gray-900 min-h-screen text-white">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Landing authMode="login" />} />
+          <Route path="/signup" element={<Landing authMode="signup" />} />
           <Route
             path="/dashboard"
             element={

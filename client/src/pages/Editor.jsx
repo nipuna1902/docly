@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -390,6 +390,9 @@ function Editor() {
         >
           ← Back
         </button>
+        <Link to="/" className="ml-4 text-sm font-semibold text-white transition hover:text-blue-400">
+          Docly
+        </Link>
         <div className="flex items-center gap-3">
           {!isOnline && (
             <span className="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-1 rounded-full border border-yellow-500/30">
